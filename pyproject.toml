@@ -1,15 +1,16 @@
 [tool.poetry]
 name = "xian-linter"
-version = "0.2.5"
-description = ""
+version = "0.3.0"
+description = "Smart contract linter for the Xian blockchain"
 authors = ["Endogen <endogen@xian.org>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.12"
 pyflakes = "^3.2.0"
-xian-contracting = ">=0.5.0,<2.0.0"
-fastapi = {version = ">=0.115.6,<0.116.0", optional = true}
+xian-contracting = ">=1.0.0,<2.0.0"
+pydantic = ">=2.0,<3"
+fastapi = {version = ">=0.115.6", optional = true}
 uvicorn = {version = ">=0.34.0", optional = true}
 
 [tool.poetry.extras]
