@@ -3,7 +3,9 @@
 [![PyPI version](https://badge.fury.io/py/xian-linter.svg)](https://badge.fury.io/py/xian-linter)
 [![Python versions](https://img.shields.io/pypi/pyversions/xian-linter.svg)](https://pypi.org/project/xian-linter/)
 
-A Python code linter specifically designed for Xian smart contracts. It combines PyFlakes for general Python linting with a custom Contracting linter to ensure contract code follows specific rules and patterns.
+A Python code linter specifically designed for Xian smart contracts. It combines
+PyFlakes with the structured linter exposed by `xian-contracting`, so contract
+rule violations include stable error codes and exact source positions.
 
 The linter can be used in two ways:
 - **Inline/Programmatic**: Import and use directly in your Python code without any server dependencies
@@ -11,10 +13,9 @@ The linter can be used in two ways:
 
 ## Features
 
-- Parallel execution of linters (PyFlakes + Contracting)
-- Deduplication of error messages
+- Parallel execution of linters (PyFlakes + Xian Contracting)
 - Configurable whitelist patterns for ignored errors
-- Standardized error reporting format
+- Structured error reporting with codes and exact spans
 - Base64 and Gzip encoded code input support (server mode)
 - Input validation and size limits (server mode)
 
@@ -43,11 +44,11 @@ pip install xian-linter[server]
 git clone https://github.com/xian-network/xian-linter.git
 cd xian-linter
 
-# Install base dependencies using Poetry
-poetry install
+# Install base dependencies with uv
+uv sync
 
 # Or install with server extras
-poetry install --extras server
+uv sync --extra server
 ```
 
 ## Usage
@@ -102,12 +103,12 @@ python -m xian_linter
 
 #### Using uvicorn directly:
 ```bash
-uvicorn xian_linter.server:app --host 0.0.0.0 --port 8000
+uvicorn xian_linter.server:create_app --factory --host 0.0.0.0 --port 8000
 ```
 
-#### From source using Poetry:
+#### From source:
 ```bash
-poetry run xian-linter
+uv run xian-linter
 ```
 
 The server will start on `http://localhost:8000` by default.
@@ -143,11 +144,14 @@ curl -X POST "http://localhost:8000/lint_gzip" -H "Content-Type: application/gzi
     "success": false,
     "errors": [
         {
-            "message": "Error description",
+            "code": "E006",
+            "message": "Class definitions are not allowed",
             "severity": "error",
             "position": {
                 "line": 3,
-                "column": 1
+                "col": 0,
+                "end_line": 4,
+                "end_col": 4
             }
         }
     ]
