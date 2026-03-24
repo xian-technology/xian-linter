@@ -89,7 +89,11 @@ def _parse_pyflakes(output: str, whitelist: frozenset[str]):
         match = _PYFLAKES_PATTERN.match(line)
         if not match:
             continue
-        lineno, col, message = int(match.group(1)), int(match.group(2)), match.group(3)
+        lineno, col, message = (
+            int(match.group(1)),
+            int(match.group(2)),
+            match.group(3),
+        )
         if any(pattern in message for pattern in whitelist):
             continue
         errors.append(
