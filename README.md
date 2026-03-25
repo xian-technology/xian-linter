@@ -4,19 +4,30 @@
 combines PyFlakes with the structured linter exposed by `xian-contracting`, so
 rule violations include stable error codes and source positions.
 
-## Scope
+## Quick Start
 
-This repo owns:
+Base package:
 
-- the public `xian-linter` package
-- inline/programmatic linting helpers
-- the optional FastAPI server mode for remote linting
+```bash
+pip install xian-linter
+```
 
-This repo does not own:
+Inline use:
 
-- the canonical contract runtime
-- node or CLI behavior
-- deployment/runtime orchestration
+```python
+from xian_linter import lint_code_inline
+
+errors = lint_code_inline("def transfer():\n    pass\n")
+```
+
+## Principles
+
+- Keep the package focused on contract linting, not runtime execution.
+- Expose the same rule surface in both inline and server modes.
+- Prefer stable error codes and positions so tooling can build on top of the
+  linter reliably.
+- Keep server mode optional. The core package should still be useful as a local
+  linting dependency.
 
 ## Key Directories
 
@@ -40,23 +51,9 @@ uv run pytest
 - [docs/BACKLOG.md](docs/BACKLOG.md)
 - [docs/README.md](docs/README.md)
 
-## Installation
-
-Base package:
-
-```bash
-pip install xian-linter
-```
-
-Server extras:
-
-```bash
-pip install "xian-linter[server]"
-```
-
 ## Usage Modes
 
-Inline/programmatic usage:
+- Inline/programmatic usage:
 
 ```python
 from xian_linter import lint_code_inline
@@ -64,9 +61,10 @@ from xian_linter import lint_code_inline
 errors = lint_code_inline("def transfer():\n    pass\n")
 ```
 
-Standalone server mode:
+- Standalone server mode:
 
 ```bash
+pip install "xian-linter[server]"
 xian-linter
 uvicorn xian_linter.server:create_app --factory --host 0.0.0.0 --port 8000
 ```
