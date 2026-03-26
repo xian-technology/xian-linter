@@ -22,3 +22,14 @@ def f(x: int):
 """
     )
     assert any(error.code == "W001" for error in errors)
+
+
+def test_runtime_zk_name_is_whitelisted():
+    errors = lint_code_inline(
+        """
+@export
+def verify(vk_id: str, proof_hex: str, public_inputs: list):
+    return zk.verify_groth16(vk_id, proof_hex, public_inputs)
+"""
+    )
+    assert not any(error.code == "W001" for error in errors)

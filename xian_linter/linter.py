@@ -41,6 +41,7 @@ DEFAULT_WHITELIST = frozenset(
         "importlib",
         "now",
         "random",
+        "zk",
     }
 )
 
