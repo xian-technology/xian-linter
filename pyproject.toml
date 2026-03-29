@@ -12,7 +12,7 @@ requires-python = ">=3.12"
 dependencies = [
     "pyflakes>=3.2,<4",
     "pydantic>=2,<3",
-    "xian-contracting>=1.0.1,<2",
+    "xian-tech-contracting>=1.0.1,<2",
 ]
 
 [project.optional-dependencies]
@@ -31,7 +31,7 @@ dev = [
 ]
 
 [tool.uv.sources]
-xian-contracting = { path = "../xian-contracting", editable = true }
+xian-tech-contracting = { path = "../xian-contracting", editable = true }
 
 [tool.setuptools.packages.find]
 where = ["."]
