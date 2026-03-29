@@ -4,12 +4,15 @@
 combines PyFlakes with the structured linter exposed by `xian-contracting`, so
 rule violations include stable error codes and source positions.
 
+The published PyPI package name is `xian-tech-linter`. The import package and
+console command remain `xian_linter` and `xian-linter`.
+
 ## Quick Start
 
 Base package:
 
 ```bash
-pip install xian-linter
+pip install xian-tech-linter
 ```
 
 Inline use:
@@ -64,7 +67,7 @@ errors = lint_code_inline("def transfer():\n    pass\n")
 - Standalone server mode:
 
 ```bash
-pip install "xian-linter[server]"
+pip install "xian-tech-linter[server]"
 xian-linter
 uvicorn xian_linter.server:create_app --factory --host 0.0.0.0 --port 8000
 ```

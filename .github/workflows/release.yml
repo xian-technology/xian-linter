@@ -60,7 +60,7 @@ jobs:
       id-token: write
     environment:
       name: pypi
-      url: https://pypi.org/p/xian-linter
+      url: https://pypi.org/p/xian-tech-linter
     steps:
       - name: Download release artifacts
         uses: actions/download-artifact@v5
@@ -92,5 +92,5 @@ jobs:
           gh release create "${GITHUB_REF_NAME}" dist/* \
             --repo "${GITHUB_REPOSITORY}" \
             --verify-tag \
-            --title "xian-linter ${GITHUB_REF_NAME#v}" \
+            --title "xian-tech-linter ${GITHUB_REF_NAME#v}" \
             --generate-notes
