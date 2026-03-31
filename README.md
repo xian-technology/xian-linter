@@ -23,12 +23,24 @@ from xian_linter import lint_code_inline
 errors = lint_code_inline("def transfer():\n    pass\n")
 ```
 
+Structured sync API:
+
+```python
+from xian_linter import LintErrorModel, lint_code_sync
+
+errors: list[LintErrorModel] = lint_code_sync(
+    "@export\ndef transfer():\n    return missing_name\n"
+)
+```
+
 ## Principles
 
 - Keep the package focused on contract linting, not runtime execution.
 - Expose the same rule surface in both inline and server modes.
 - Prefer stable error codes and positions so tooling can build on top of the
   linter reliably.
+- Keep the structured result types importable from the package root so callers
+  do not need to reach into internal modules.
 - Keep server mode optional. The core package should still be useful as a local
   linting dependency.
 
@@ -59,9 +71,10 @@ uv run pytest
 - Inline/programmatic usage:
 
 ```python
-from xian_linter import lint_code_inline
+from xian_linter import lint_code_inline, lint_code_sync
 
-errors = lint_code_inline("def transfer():\n    pass\n")
+inline_errors = lint_code_inline("def transfer():\n    pass\n")
+sync_errors = lint_code_sync("def transfer():\n    pass\n")
 ```
 
 - Standalone server mode:

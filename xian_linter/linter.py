@@ -1,4 +1,9 @@
-"""Xian smart-contract linter."""
+"""Xian smart-contract linter.
+
+This package stays thin on purpose: the authoritative contract-rule surface
+comes from ``xian-contracting`` and is merged with PyFlakes warnings into a
+single structured result list.
+"""
 
 from __future__ import annotations
 
@@ -81,8 +86,10 @@ def _contracting_to_model(error: ContractingLintError) -> LintErrorModel:
 _PYFLAKES_PATTERN = re.compile(r"<string>:(\d+):(\d+):\s*(.+)")
 
 
-def _parse_pyflakes(output: str, whitelist: frozenset[str]):
-    errors = []
+def _parse_pyflakes(
+    output: str, whitelist: frozenset[str]
+) -> list[LintErrorModel]:
+    errors: list[LintErrorModel] = []
     for line in output.splitlines():
         line = line.strip()
         if not line:
@@ -113,7 +120,7 @@ def _parse_pyflakes(output: str, whitelist: frozenset[str]):
     return errors
 
 
-def _run_contracting(code: str):
+def _run_contracting(code: str) -> list[LintErrorModel]:
     linter = ContractingLinter()
     errors = linter.check(code)
     if not errors:
@@ -121,7 +128,7 @@ def _run_contracting(code: str):
     return [_contracting_to_model(error) for error in errors]
 
 
-def _run_pyflakes(code: str, whitelist: frozenset[str]):
+def _run_pyflakes(code: str, whitelist: frozenset[str]) -> list[LintErrorModel]:
     stdout = StringIO()
     stderr = StringIO()
     reporter = Reporter(stdout, stderr)
@@ -129,7 +136,9 @@ def _run_pyflakes(code: str, whitelist: frozenset[str]):
     return _parse_pyflakes(stdout.getvalue() + stderr.getvalue(), whitelist)
 
 
-async def lint_code(code: str, whitelist: frozenset[str] | None = None):
+async def lint_code(
+    code: str, whitelist: frozenset[str] | None = None
+) -> list[LintErrorModel]:
     whitelist = whitelist or DEFAULT_WHITELIST
     loop = asyncio.get_running_loop()
     contracting_task = loop.run_in_executor(None, _run_contracting, code)
@@ -148,7 +157,9 @@ async def lint_code(code: str, whitelist: frozenset[str] | None = None):
     return errors
 
 
-def lint_code_sync(code: str, whitelist: frozenset[str] | None = None):
+def lint_code_sync(
+    code: str, whitelist: frozenset[str] | None = None
+) -> list[LintErrorModel]:
     whitelist = whitelist or DEFAULT_WHITELIST
     errors = _run_contracting(code) + _run_pyflakes(code, whitelist)
     errors.sort(
@@ -163,7 +174,7 @@ def lint_code_sync(code: str, whitelist: frozenset[str] | None = None):
 def lint_code_inline(
     code: str,
     whitelist_patterns: Iterable[str] | None = None,
-):
+) -> list[LintErrorModel]:
     whitelist = (
         frozenset(whitelist_patterns)
         if whitelist_patterns is not None
@@ -173,7 +184,9 @@ def lint_code_inline(
 
 
 @lru_cache(maxsize=100)
-def get_whitelist_patterns(patterns_str: str | None = None):
+def get_whitelist_patterns(
+    patterns_str: str | None = None,
+) -> frozenset[str]:
     if not patterns_str:
         return DEFAULT_WHITELIST
     return frozenset(patterns_str.split(","))
