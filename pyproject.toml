@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xian-tech-linter"
-version = "0.3.2"
+version = "0.3.3"
 description = "Smart contract linter for the Xian blockchain"
 readme = "README.md"
 authors = [{ name = "Xian Network", email = "info@xian.org" }]
