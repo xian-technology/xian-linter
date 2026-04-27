@@ -10,6 +10,20 @@ console command remain `xian_linter` and `xian-linter`. The package can be
 used inline (as a dependency in another tool) or as an HTTP server when the
 `server` extra is installed.
 
+## Linting Shape
+
+```mermaid
+flowchart LR
+  Source["Contract source"] --> API["Inline API or HTTP server"]
+  API --> Pyflakes["PyFlakes checks"]
+  API --> Contracting["xian-contracting structured linter"]
+  Contracting --> VM["Optional xian_vm_v1 validation"]
+  Pyflakes --> Results["Stable diagnostics"]
+  Contracting --> Results
+  VM --> Results
+  Results --> Tools["IDE, hub, CI, and scripts"]
+```
+
 ## Quick Start
 
 Install the base package:
