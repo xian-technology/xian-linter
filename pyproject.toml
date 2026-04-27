@@ -10,7 +10,7 @@ readme = "README.md"
 authors = [{ name = "Xian Network", email = "info@xian.org" }]
 requires-python = ">=3.12"
 dependencies = [
-    "pyflakes>=3.2,<4",
+    "pyflakes>=3.4,<4",
     "pydantic>=2,<3",
     "xian-tech-contracting>=1.0.1,<2",
 ]
@@ -26,8 +26,8 @@ xian-linter = "xian_linter.server:run_server"
 
 [dependency-groups]
 dev = [
-    "pytest>=9.0.2,<10",
-    "ruff>=0.15.6,<0.16",
+    "pytest>=9.0.3,<10",
+    "ruff>=0.15.12,<0.16",
 ]
 
 [tool.uv.sources]
