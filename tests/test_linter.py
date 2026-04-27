@@ -1,10 +1,24 @@
+import sys
+from types import SimpleNamespace
+
+import pytest
+
 from xian_linter import (
+    XIAN_VM_V1_MODE,
     LintErrorModel,
     LintResponse,
     PositionModel,
     lint_code_inline,
     lint_code_sync,
 )
+
+
+def _valid_vm_source() -> str:
+    return """
+@export
+def f() -> int:
+    return 1
+"""
 
 
 def test_inline_contracting_error_is_structured():
@@ -72,3 +86,64 @@ def test_public_models_are_available_from_package_root():
     )
 
     assert response.errors[0].code == "E999"
+
+
+def test_xian_vm_v1_mode_accepts_vm_lowerable_contract():
+    errors = lint_code_inline(_valid_vm_source(), mode=XIAN_VM_V1_MODE)
+
+    assert not errors
+
+
+def test_xian_vm_v1_mode_reports_ir_lowering_errors():
+    errors = lint_code_inline(
+        """
+value = 1
+
+@export
+def f() -> int:
+    global value
+    value = 2
+    return value
+""",
+        mode=XIAN_VM_V1_MODE,
+    )
+
+    assert any(error.code == "XVM001" for error in errors)
+
+
+def test_xian_vm_v1_mode_uses_native_validator_when_available(monkeypatch):
+    calls: list[str] = []
+    monkeypatch.setitem(
+        sys.modules,
+        "xian_vm_core",
+        SimpleNamespace(
+            validate_module_ir_json=lambda payload: calls.append(payload)
+        ),
+    )
+
+    errors = lint_code_inline(_valid_vm_source(), mode=XIAN_VM_V1_MODE)
+
+    assert not errors
+    assert calls
+
+
+def test_xian_vm_v1_mode_reports_native_validation_errors(monkeypatch):
+    def fail_validation(_: str) -> None:
+        raise RuntimeError("bad ir")
+
+    monkeypatch.setitem(
+        sys.modules,
+        "xian_vm_core",
+        SimpleNamespace(validate_module_ir_json=fail_validation),
+    )
+
+    errors = lint_code_inline(_valid_vm_source(), mode=XIAN_VM_V1_MODE)
+
+    assert any(
+        error.code == "XVM002" and "bad ir" in error.message for error in errors
+    )
+
+
+def test_unsupported_lint_mode_is_rejected():
+    with pytest.raises(ValueError, match="Unsupported lint mode"):
+        lint_code_inline(_valid_vm_source(), mode="unknown")

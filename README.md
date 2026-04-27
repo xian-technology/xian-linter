@@ -36,6 +36,18 @@ errors: list[LintErrorModel] = lint_code_sync(
 )
 ```
 
+Validate against the `xian_vm_v1` target:
+
+```bash
+pip install "xian-tech-linter[vm]"
+```
+
+```python
+from xian_linter import lint_code_sync
+
+errors = lint_code_sync(source, mode="xian_vm_v1")
+```
+
 Run as a standalone HTTP server:
 
 ```bash
@@ -49,8 +61,11 @@ uvicorn xian_linter.server:create_app --factory --host 0.0.0.0 --port 8000
 
 - **Linting only.** The package focuses on contract linting; runtime
   execution and contract submission belong elsewhere.
-- **One rule surface, two modes.** Inline and server modes expose the same
-  rules and error codes.
+- **One rule surface, multiple integration modes.** Inline and server modes
+  expose the same rules and error codes.
+- **VM-aware without duplicated semantics.** `mode="xian_vm_v1"` delegates to
+  `xian-contracting` for VM compatibility and IR lowering, and uses the native
+  `xian_vm_core` IR validator when the `vm` extra is installed.
 - **Stable codes and positions.** Tooling (IDE plugins, CI gates, the
   contracting hub) can rely on consistent error codes and source positions
   to render diagnostics.
@@ -78,6 +93,7 @@ uvicorn xian_linter.server:create_app --factory --host 0.0.0.0 --port 8000
   from xian_linter import lint_code_inline, lint_code_sync
   inline_errors = lint_code_inline("def transfer():\n    pass\n")
   sync_errors   = lint_code_sync("def transfer():\n    pass\n")
+  vm_errors     = lint_code_sync(source, mode="xian_vm_v1")
   ```
 - **HTTP server** — for editor / IDE integrations, CI runners, or remote
   linting from web frontends:
@@ -85,6 +101,9 @@ uvicorn xian_linter.server:create_app --factory --host 0.0.0.0 --port 8000
   pip install "xian-tech-linter[server]"
   xian-linter
   ```
+  Select the VM target with `?mode=xian_vm_v1` on `/lint`, `/lint_base64`, or
+  `/lint_gzip`. Install `xian-tech-linter[server,vm]` when the server should
+  also run native IR validation through `xian_vm_core`.
 
 ## Validation
 

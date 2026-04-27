@@ -20,6 +20,9 @@ server = [
     "fastapi>=0.115.6,<1",
     "uvicorn>=0.34,<1",
 ]
+vm = [
+    "xian-tech-vm-core>=0.1.0,<0.2",
+]
 
 [project.scripts]
 xian-linter = "xian_linter.server:run_server"
@@ -32,6 +35,7 @@ dev = [
 
 [tool.uv.sources]
 xian-tech-contracting = { path = "../xian-contracting", editable = true }
+xian-tech-vm-core = { path = "../xian-contracting/packages/xian-vm-core", editable = true }
 
 [tool.setuptools.packages.find]
 where = ["."]

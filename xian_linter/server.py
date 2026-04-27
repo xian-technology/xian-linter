@@ -9,6 +9,7 @@ from .linter import (
     LintResponse,
     get_whitelist_patterns,
     lint_code,
+    normalize_lint_mode,
 )
 
 
@@ -22,6 +23,16 @@ def _load_server_dependencies():
         ) from exc
 
     return FastAPI, HTTPException, Request, uvicorn
+
+
+def _request_lint_mode(request, HTTPException) -> str:
+    mode = request.query_params.get("mode") or request.query_params.get(
+        "lint_mode"
+    )
+    try:
+        return normalize_lint_mode(mode)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 def create_app():
@@ -40,6 +51,7 @@ def create_app():
         whitelist = get_whitelist_patterns(
             request.query_params.get("whitelist_patterns")
         )
+        mode = _request_lint_mode(request, HTTPException)
 
         try:
             code = base64.b64decode(
@@ -47,7 +59,7 @@ def create_app():
             ).decode("utf-8", errors="replace")
             if not code.strip():
                 raise HTTPException(status_code=400, detail="Empty code")
-            errors = await lint_code(code, whitelist)
+            errors = await lint_code(code, whitelist, mode=mode)
             return LintResponse(success=len(errors) == 0, errors=errors)
         except HTTPException:
             raise
@@ -74,12 +86,13 @@ def create_app():
         whitelist = get_whitelist_patterns(
             request.query_params.get("whitelist_patterns")
         )
+        mode = _request_lint_mode(request, HTTPException)
 
         try:
             code = gzip.decompress(raw_data).decode("utf-8", errors="replace")
             if not code.strip():
                 raise HTTPException(status_code=400, detail="Empty code")
-            errors = await lint_code(code, whitelist)
+            errors = await lint_code(code, whitelist, mode=mode)
             return LintResponse(success=len(errors) == 0, errors=errors)
         except HTTPException:
             raise
@@ -106,12 +119,13 @@ def create_app():
         whitelist = get_whitelist_patterns(
             request.query_params.get("whitelist_patterns")
         )
+        mode = _request_lint_mode(request, HTTPException)
 
         try:
             code = raw_data.decode("utf-8", errors="replace")
             if not code.strip():
                 raise HTTPException(status_code=400, detail="Empty code")
-            errors = await lint_code(code, whitelist)
+            errors = await lint_code(code, whitelist, mode=mode)
             return LintResponse(success=len(errors) == 0, errors=errors)
         except HTTPException:
             raise
