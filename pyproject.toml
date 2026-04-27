@@ -8,7 +8,7 @@ version = "0.3.3"
 description = "Smart contract linter for the Xian blockchain"
 readme = "README.md"
 authors = [{ name = "Xian Network", email = "info@xian.org" }]
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 dependencies = [
     "pyflakes>=3.4,<4",
     "pydantic>=2,<3",
@@ -38,7 +38,7 @@ where = ["."]
 
 [tool.ruff]
 line-length = 80
-target-version = "py312"
+target-version = "py314"
 exclude = ["contract.py", "contract.py.b64", "contract.py.gz"]
 
 [tool.ruff.lint]
