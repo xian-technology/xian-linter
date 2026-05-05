@@ -11,11 +11,11 @@ from .linter import (
 
 __all__ = [
     "DEFAULT_LINT_MODE",
+    "SUPPORTED_LINT_MODES",
+    "XIAN_VM_V1_MODE",
     "LintErrorModel",
     "LintResponse",
     "PositionModel",
-    "SUPPORTED_LINT_MODES",
-    "XIAN_VM_V1_MODE",
     "lint_code_inline",
     "lint_code_sync",
 ]

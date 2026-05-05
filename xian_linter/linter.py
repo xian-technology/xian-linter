@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import asyncio
 import re
+from collections.abc import Iterable
 from functools import lru_cache
 from io import StringIO
-from typing import Iterable
 
 from contracting.compilation.compiler import ContractingCompiler
 from contracting.compilation.linter import (
