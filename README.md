@@ -29,7 +29,7 @@ flowchart LR
 Install the base package:
 
 ```bash
-pip install xian-tech-linter
+uv add xian-tech-linter
 ```
 
 Lint inline (lightweight, position-only diagnostics):
@@ -53,7 +53,7 @@ errors: list[LintErrorModel] = lint_code_sync(
 Validate against the `xian_vm_v1` target:
 
 ```bash
-pip install "xian-tech-linter[vm]"
+uv add "xian-tech-linter[vm]"
 ```
 
 ```python
@@ -65,7 +65,7 @@ errors = lint_code_sync(source, mode="xian_vm_v1")
 Run as a standalone HTTP server:
 
 ```bash
-pip install "xian-tech-linter[server]"
+uv add "xian-tech-linter[server]"
 xian-linter
 # or, with full ASGI control:
 uvicorn xian_linter.server:create_app --factory --host 0.0.0.0 --port 8000
@@ -112,7 +112,7 @@ uvicorn xian_linter.server:create_app --factory --host 0.0.0.0 --port 8000
 - **HTTP server** — for editor / IDE integrations, CI runners, or remote
   linting from web frontends:
   ```bash
-  pip install "xian-tech-linter[server]"
+  uv add "xian-tech-linter[server]"
   xian-linter
   ```
   Select the VM target with `?mode=xian_vm_v1` on `/lint`, `/lint_base64`, or
