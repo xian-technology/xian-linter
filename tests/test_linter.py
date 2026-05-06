@@ -55,6 +55,19 @@ def verify(vk_id: str, proof_hex: str, public_inputs: list):
     assert not any(error.code == "W001" for error in errors)
 
 
+def test_log_event_indexed_name_is_whitelisted():
+    errors = lint_code_inline(
+        """
+TransferEvent = LogEvent('Transfer', {'from': indexed(str), 'to': indexed(str), 'amount': (int, float, decimal)})
+"""
+    )
+
+    assert not any(
+        error.code == "W001" and "indexed" in error.message
+        for error in errors
+    )
+
+
 def test_sync_helper_is_public_and_returns_structured_errors():
     errors = lint_code_sync(
         """

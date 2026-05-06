@@ -53,6 +53,7 @@ DEFAULT_WHITELIST = frozenset(
         "decimal",
         "export",
         "hashlib",
+        "indexed",
         "importlib",
         "now",
         "random",
