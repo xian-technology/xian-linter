@@ -32,6 +32,7 @@ MAX_CODE_SIZE = 1_000_000
 DEFAULT_LINT_MODE = "python"
 XIAN_VM_V1_MODE = XIAN_VM_V1_PROFILE
 SUPPORTED_LINT_MODES = frozenset({DEFAULT_LINT_MODE, XIAN_VM_V1_MODE})
+CONTRACTING_SYNTAX_ERROR_CODE = "E020"
 XIAN_VM_LOWERING_ERROR_CODE = "XVM001"
 XIAN_VM_NATIVE_VALIDATION_ERROR_CODE = "XVM002"
 
@@ -233,6 +234,19 @@ def _sort_errors(errors: list[LintErrorModel]) -> list[LintErrorModel]:
     return errors
 
 
+def _has_structured_syntax_error(errors: list[LintErrorModel]) -> bool:
+    return any(error.code == CONTRACTING_SYNTAX_ERROR_CODE for error in errors)
+
+
+def _merge_errors(
+    contract_rule_errors: list[LintErrorModel],
+    pyflakes_errors: list[LintErrorModel],
+) -> list[LintErrorModel]:
+    if _has_structured_syntax_error(contract_rule_errors):
+        return _sort_errors(contract_rule_errors)
+    return _sort_errors(contract_rule_errors + pyflakes_errors)
+
+
 async def lint_code(
     code: str,
     whitelist: frozenset[str] | None = None,
@@ -253,7 +267,7 @@ async def lint_code(
         contract_rules_task,
         pyflakes_task,
     )
-    return _sort_errors(contract_rule_errors + pyflakes_errors)
+    return _merge_errors(contract_rule_errors, pyflakes_errors)
 
 
 def lint_code_sync(
@@ -264,11 +278,13 @@ def lint_code_sync(
 ) -> list[LintErrorModel]:
     whitelist = whitelist or DEFAULT_WHITELIST
     selected_mode = normalize_lint_mode(mode)
-    errors = _run_contract_rules(code, selected_mode) + _run_pyflakes(
-        code,
-        whitelist,
+    contract_rule_errors = _run_contract_rules(code, selected_mode)
+    if _has_structured_syntax_error(contract_rule_errors):
+        return _sort_errors(contract_rule_errors)
+    return _merge_errors(
+        contract_rule_errors,
+        _run_pyflakes(code, whitelist),
     )
-    return _sort_errors(errors)
 
 
 def lint_code_inline(

@@ -1,3 +1,4 @@
+import asyncio
 import sys
 from types import SimpleNamespace
 
@@ -11,6 +12,7 @@ from xian_linter import (
     lint_code_inline,
     lint_code_sync,
 )
+from xian_linter.linter import lint_code
 
 
 def _valid_vm_source() -> str:
@@ -42,6 +44,32 @@ def f(x: int):
 """
     )
     assert any(error.code == "W001" for error in errors)
+
+
+def test_pyflakes_syntax_warning_is_suppressed_by_structured_error():
+    errors = lint_code_inline(
+        """
+def change it(test: str):
+    return "TEST"
+"""
+    )
+
+    assert any(error.code == "E020" for error in errors)
+    assert not any(error.code == "W001" for error in errors)
+
+
+def test_async_linter_suppresses_pyflakes_syntax_warning():
+    errors = asyncio.run(
+        lint_code(
+            """
+def change it(test: str):
+    return "TEST"
+"""
+        )
+    )
+
+    assert any(error.code == "E020" for error in errors)
+    assert not any(error.code == "W001" for error in errors)
 
 
 def test_runtime_zk_name_is_whitelisted():
