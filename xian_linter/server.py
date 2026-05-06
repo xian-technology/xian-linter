@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import base64
 import gzip
 
@@ -37,7 +35,15 @@ def _request_lint_mode(request, HTTPException) -> str:
 
 def create_app():
     FastAPI, HTTPException, Request, _ = _load_server_dependencies()
+    from fastapi.middleware.cors import CORSMiddleware
+
     app = FastAPI(title="Xian Contract Linter")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     @app.post("/lint_base64")
     async def lint_base64(request: Request) -> LintResponse:
