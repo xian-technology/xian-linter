@@ -91,8 +91,7 @@ TransferEvent = LogEvent('Transfer', {'from': indexed(str), 'to': indexed(str), 
     )
 
     assert not any(
-        error.code == "W001" and "indexed" in error.message
-        for error in errors
+        error.code == "W001" and "indexed" in error.message for error in errors
     )
 
 
