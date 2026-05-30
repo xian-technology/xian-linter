@@ -41,7 +41,7 @@ xian-tech-vm-core = { path = "../xian-contracting/packages/xian-vm-core", editab
 where = ["."]
 
 [tool.ruff]
-line-length = 80
+line-length = 100
 target-version = "py314"
 exclude = ["contract.py", "contract.py.b64", "contract.py.gz"]
 
