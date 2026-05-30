@@ -24,9 +24,7 @@ def _load_server_dependencies():
 
 
 def _request_lint_mode(request, HTTPException) -> str:
-    mode = request.query_params.get("mode") or request.query_params.get(
-        "lint_mode"
-    )
+    mode = request.query_params.get("mode") or request.query_params.get("lint_mode")
     try:
         return normalize_lint_mode(mode)
     except ValueError as exc:
@@ -54,15 +52,13 @@ def create_app():
         if len(raw_data) > MAX_CODE_SIZE:
             raise HTTPException(status_code=400, detail="Code size too large")
 
-        whitelist = get_whitelist_patterns(
-            request.query_params.get("whitelist_patterns")
-        )
+        whitelist = get_whitelist_patterns(request.query_params.get("whitelist_patterns"))
         mode = _request_lint_mode(request, HTTPException)
 
         try:
-            code = base64.b64decode(
-                raw_data.decode("utf-8", errors="replace")
-            ).decode("utf-8", errors="replace")
+            code = base64.b64decode(raw_data.decode("utf-8", errors="replace")).decode(
+                "utf-8", errors="replace"
+            )
             if not code.strip():
                 raise HTTPException(status_code=400, detail="Empty code")
             errors = await lint_code(code, whitelist, mode=mode)
@@ -89,9 +85,7 @@ def create_app():
         if len(raw_data) > MAX_CODE_SIZE:
             raise HTTPException(status_code=400, detail="Code size too large")
 
-        whitelist = get_whitelist_patterns(
-            request.query_params.get("whitelist_patterns")
-        )
+        whitelist = get_whitelist_patterns(request.query_params.get("whitelist_patterns"))
         mode = _request_lint_mode(request, HTTPException)
 
         try:
@@ -122,9 +116,7 @@ def create_app():
         if len(raw_data) > MAX_CODE_SIZE:
             raise HTTPException(status_code=400, detail="Code size too large")
 
-        whitelist = get_whitelist_patterns(
-            request.query_params.get("whitelist_patterns")
-        )
+        whitelist = get_whitelist_patterns(request.query_params.get("whitelist_patterns"))
         mode = _request_lint_mode(request, HTTPException)
 
         try:

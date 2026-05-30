@@ -86,9 +86,7 @@ def normalize_lint_mode(mode: str | None = None) -> str:
     selected = mode or DEFAULT_LINT_MODE
     if selected not in SUPPORTED_LINT_MODES:
         supported = ", ".join(sorted(SUPPORTED_LINT_MODES))
-        raise ValueError(
-            f"Unsupported lint mode '{selected}'. Supported modes: {supported}"
-        )
+        raise ValueError(f"Unsupported lint mode '{selected}'. Supported modes: {supported}")
     return selected
 
 
@@ -108,9 +106,7 @@ def _contracting_to_model(error: ContractingLintError) -> LintErrorModel:
 _PYFLAKES_PATTERN = re.compile(r"<string>:(\d+):(\d+):\s*(.+)")
 
 
-def _parse_pyflakes(
-    output: str, whitelist: frozenset[str]
-) -> list[LintErrorModel]:
+def _parse_pyflakes(output: str, whitelist: frozenset[str]) -> list[LintErrorModel]:
     errors: list[LintErrorModel] = []
     for line in output.splitlines():
         line = line.strip()
@@ -294,9 +290,7 @@ def lint_code_inline(
     mode: str | None = DEFAULT_LINT_MODE,
 ) -> list[LintErrorModel]:
     whitelist = (
-        frozenset(whitelist_patterns)
-        if whitelist_patterns is not None
-        else DEFAULT_WHITELIST
+        frozenset(whitelist_patterns) if whitelist_patterns is not None else DEFAULT_WHITELIST
     )
     return lint_code_sync(code, whitelist, mode=mode)
 

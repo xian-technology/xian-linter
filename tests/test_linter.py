@@ -90,9 +90,7 @@ TransferEvent = LogEvent('Transfer', {'from': indexed(str), 'to': indexed(str), 
 """
     )
 
-    assert not any(
-        error.code == "W001" and "indexed" in error.message for error in errors
-    )
+    assert not any(error.code == "W001" and "indexed" in error.message for error in errors)
 
 
 def test_sync_helper_is_public_and_returns_structured_errors():
@@ -156,9 +154,7 @@ def test_xian_vm_v1_mode_uses_native_validator_when_available(monkeypatch):
     monkeypatch.setitem(
         sys.modules,
         "xian_vm_core",
-        SimpleNamespace(
-            validate_module_ir_json=lambda payload: calls.append(payload)
-        ),
+        SimpleNamespace(validate_module_ir_json=lambda payload: calls.append(payload)),
     )
 
     errors = lint_code_inline(_valid_vm_source(), mode=XIAN_VM_V1_MODE)
@@ -179,9 +175,7 @@ def test_xian_vm_v1_mode_reports_native_validation_errors(monkeypatch):
 
     errors = lint_code_inline(_valid_vm_source(), mode=XIAN_VM_V1_MODE)
 
-    assert any(
-        error.code == "XVM002" and "bad ir" in error.message for error in errors
-    )
+    assert any(error.code == "XVM002" and "bad ir" in error.message for error in errors)
 
 
 def test_unsupported_lint_mode_is_rejected():
