@@ -67,8 +67,7 @@ Run as a standalone HTTP server:
 ```bash
 uv add "xian-tech-linter[server]"
 xian-linter
-# or, with full ASGI control:
-uvicorn xian_linter.server:create_app --factory --host 0.0.0.0 --port 8000
+# defaults to http://127.0.0.1:8000
 ```
 
 ## Principles
@@ -118,6 +117,26 @@ uvicorn xian_linter.server:create_app --factory --host 0.0.0.0 --port 8000
   Select the VM target with `?mode=xian_vm_v1` on `/lint`, `/lint_base64`, or
   `/lint_gzip`. Install `xian-tech-linter[server,vm]` when the server should
   also run native IR validation through `xian_vm_core`.
+
+  HTTP mode is local by default. Use `XIAN_LINTER_HOST` and
+  `XIAN_LINTER_PORT` to publish it deliberately, preferably behind a
+  rate-limited reverse proxy:
+
+  ```bash
+  XIAN_LINTER_HOST=0.0.0.0 XIAN_LINTER_PORT=8000 xian-linter
+  ```
+
+  Browser CORS defaults to local origins only. Set
+  `XIAN_LINTER_CORS_ORIGINS` to a comma-separated allowlist when a hosted IDE
+  or frontend should call the service:
+
+  ```bash
+  XIAN_LINTER_CORS_ORIGINS=https://ide.example xian-linter
+  ```
+
+  All lint endpoints enforce the 1 MB source limit. `/lint_gzip` enforces that
+  limit on both compressed and decompressed bytes and rejects extreme gzip
+  compression ratios.
 
 ## Validation
 
