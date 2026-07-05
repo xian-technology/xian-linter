@@ -1,5 +1,6 @@
 import asyncio
 import gzip
+import re
 
 import pytest
 
@@ -110,6 +111,18 @@ def test_cors_defaults_to_local_browser_origins(monkeypatch):
     assert config["allow_origin_regex"] == server.LOCAL_CORS_ORIGIN_REGEX
 
 
+def test_cors_default_regex_allows_ipv6_loopback(monkeypatch):
+    monkeypatch.delenv(server.CORS_ORIGINS_ENV, raising=False)
+
+    config = server._cors_middleware_config()
+    pattern = config["allow_origin_regex"]
+
+    assert isinstance(pattern, str)
+    assert re.fullmatch(pattern, "http://[::1]")
+    assert re.fullmatch(pattern, "https://[::1]:5173")
+    assert not re.fullmatch(pattern, "http://[::2]:5173")
+
+
 def test_cors_can_be_explicitly_configured(monkeypatch):
     monkeypatch.setenv(
         server.CORS_ORIGINS_ENV,
@@ -160,3 +173,23 @@ def test_run_server_allows_explicit_host_and_port(monkeypatch):
     server.run_server()
 
     assert calls == [{"app": "app", "host": "0.0.0.0", "port": 9000}]
+
+
+def test_run_server_passes_ipv6_loopback_host_to_uvicorn(monkeypatch):
+    calls = []
+
+    class FakeUvicorn:
+        @staticmethod
+        def run(app, *, host, port):
+            calls.append({"app": app, "host": host, "port": port})
+
+    monkeypatch.setenv(server.SERVER_HOST_ENV, "::1")
+    monkeypatch.setenv(server.SERVER_PORT_ENV, "8001")
+    monkeypatch.setattr(
+        server, "_load_server_dependencies", lambda: (None, None, None, FakeUvicorn)
+    )
+    monkeypatch.setattr(server, "create_app", lambda: "app")
+
+    server.run_server()
+
+    assert calls == [{"app": "app", "host": "::1", "port": 8001}]

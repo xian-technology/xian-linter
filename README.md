@@ -119,16 +119,22 @@ xian-linter
   also run native IR validation through `xian_vm_core`.
 
   HTTP mode is local by default. Use `XIAN_LINTER_HOST` and
-  `XIAN_LINTER_PORT` to publish it deliberately, preferably behind a
-  rate-limited reverse proxy:
+  `XIAN_LINTER_PORT` to change the bind address. Set `XIAN_LINTER_HOST=::1`
+  when the server should bind to IPv6 loopback instead of the default IPv4
+  loopback address:
 
   ```bash
-  XIAN_LINTER_HOST=0.0.0.0 XIAN_LINTER_PORT=8000 xian-linter
+  XIAN_LINTER_HOST=::1 XIAN_LINTER_PORT=8000 xian-linter
   ```
+
+  Use a non-loopback host such as `0.0.0.0` only when publishing the service
+  deliberately, preferably behind a rate-limited reverse proxy.
 
   Browser CORS defaults to local origins only. Set
   `XIAN_LINTER_CORS_ORIGINS` to a comma-separated allowlist when a hosted IDE
-  or frontend should call the service:
+  or frontend should call the service. The default local-origin regex includes
+  `localhost`, `127.0.0.1`, and bracketed IPv6 loopback origins such as
+  `http://[::1]:5173`:
 
   ```bash
   XIAN_LINTER_CORS_ORIGINS=https://ide.example xian-linter
