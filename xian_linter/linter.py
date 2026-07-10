@@ -99,6 +99,7 @@ def _compiler_to_model(diagnostic: dict[str, object]) -> LintErrorModel:
 
 
 _PYFLAKES_PATTERN = re.compile(r"<string>:(\d+):(\d+):\s*(.+)")
+_PYFLAKES_UNDEFINED_NAME_PATTERN = re.compile(r"undefined name '([^']+)'")
 
 
 def _parse_pyflakes(output: str, whitelist: frozenset[str]) -> list[LintErrorModel]:
@@ -115,7 +116,8 @@ def _parse_pyflakes(output: str, whitelist: frozenset[str]) -> list[LintErrorMod
             int(match.group(2)),
             match.group(3),
         )
-        if any(pattern in message for pattern in whitelist):
+        undefined_name = _PYFLAKES_UNDEFINED_NAME_PATTERN.fullmatch(message)
+        if undefined_name is not None and undefined_name.group(1) in whitelist:
             continue
         errors.append(
             LintErrorModel(

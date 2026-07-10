@@ -145,8 +145,9 @@ xian-linter
   both compressed and decompressed bytes and rejects extreme compression ratios.
 
 Compiler admission also caps statement/expression nodes at 50,000, syntax
-depth at 64, total tokens at 100,000, and tokens on one logical line at 4,096.
-Limit failures use stable `xian.limit.*` codes.
+depth at 64, total tokens at 100,000, tokens on one logical line at 4,096,
+canonical IR JSON at 1 MiB, and contract-handle inference at 512 passes. Limit
+failures use stable `xian.limit.*` codes.
 
 ## Validation
 

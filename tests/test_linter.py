@@ -104,6 +104,20 @@ TransferEvent = LogEvent('Transfer', {'from': indexed(str), 'to': indexed(str), 
     assert not any(error.code == "W001" and "indexed" in error.message for error in errors)
 
 
+def test_whitelist_does_not_suppress_lookalike_undefined_names():
+    errors = lint_code_inline(
+        """
+@export
+def f():
+    return randomized + HashEvil
+"""
+    )
+
+    warnings = [error.message for error in errors if error.code == "W001"]
+    assert "undefined name 'randomized'" in warnings
+    assert "undefined name 'HashEvil'" in warnings
+
+
 def test_sync_helper_is_public_and_returns_structured_errors():
     errors = lint_code_sync(
         """
