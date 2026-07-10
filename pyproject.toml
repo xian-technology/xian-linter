@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xian-tech-linter"
-version = "0.3.7-beta.1"
+version = "0.4.0"
 description = "Smart contract linter for the Xian blockchain"
 readme = "README.md"
 authors = [{ name = "Xian Network", email = "info@xian.org" }]
@@ -12,7 +12,7 @@ requires-python = ">=3.14,<3.15"
 dependencies = [
     "pyflakes>=3.4,<4",
     "pydantic>=2,<3",
-    "xian-tech-contracting>=1.0.8,<2",
+    "xian-tech-contracting>=1.1.0,<2",
 ]
 
 [project.optional-dependencies]

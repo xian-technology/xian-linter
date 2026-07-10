@@ -377,12 +377,12 @@ wheels = [
 
 [[package]]
 name = "xian-tech-compiler-core"
-version = "0.1.4b1"
+version = "0.2.0"
 source = { directory = "../xian-contracting/packages/xian-compiler-core" }
 
 [[package]]
 name = "xian-tech-contracting"
-version = "1.0.11b1"
+version = "1.1.0"
 source = { editable = "../xian-contracting" }
 dependencies = [
     { name = "cachetools" },
@@ -414,7 +414,7 @@ dev = [
 
 [[package]]
 name = "xian-tech-linter"
-version = "0.3.7b1"
+version = "0.4.0"
 source = { editable = "." }
 dependencies = [
     { name = "pydantic" },
@@ -456,7 +456,7 @@ dev = [
 
 [[package]]
 name = "xian-tech-runtime-types"
-version = "0.1.4b1"
+version = "0.1.4"
 source = { editable = "../xian-contracting/packages/xian-runtime-types" }
 
 [[package]]
