@@ -1,9 +1,9 @@
 # xian-linter
 
 `xian-linter` is a Python linter specifically for Xian smart contracts. It
-combines PyFlakes with the structured linter exposed by
-[`xian-contracting`](../xian-contracting), so rule violations come back with
-stable error codes and source positions that downstream tools can rely on.
+combines PyFlakes with authoritative Rust compiler diagnostics exposed by
+[`xian-contracting`](../xian-contracting), so rule violations match Python,
+WASM/JavaScript, and validator deployment admission.
 
 The published PyPI package is `xian-tech-linter`. The import package and
 console command remain `xian_linter` and `xian-linter`. The package can be
@@ -74,11 +74,11 @@ xian-linter
 
 - **Linting only.** The package focuses on contract linting; runtime
   execution and contract submission belong elsewhere.
-- **One rule surface, multiple integration modes.** Inline and server modes
-  expose the same rules and error codes.
-- **VM-aware without duplicated semantics.** `mode="xian_vm_v1"` delegates to
-  `xian-contracting` for VM compatibility and IR lowering, and uses the native
-  `xian_vm_core` IR validator when the `vm` extra is installed.
+- **One compiler authority, multiple integration modes.** Inline and server
+  modes expose the same Rust compiler rules and `xian.*` diagnostic codes.
+- **Compatible mode names without duplicated semantics.** Both `python` and
+  `xian_vm_v1` use the Rust compiler; the names remain API-compatible. VM mode
+  additionally uses the native `xian_vm_core` IR validator when installed.
 - **Stable codes and positions.** Tooling (IDE plugins, CI gates, the
   contracting hub) can rely on consistent error codes and source positions
   to render diagnostics.
@@ -140,9 +140,13 @@ xian-linter
   XIAN_LINTER_CORS_ORIGINS=https://ide.example xian-linter
   ```
 
-  All lint endpoints enforce the 1 MB source limit. `/lint_gzip` enforces that
-  limit on both compressed and decompressed bytes and rejects extreme gzip
-  compression ratios.
+  Lint transports accept at most 1 MB bodies, while compiler admission accepts
+  at most 128 KiB contract source. `/lint_gzip` enforces the transport limit on
+  both compressed and decompressed bytes and rejects extreme compression ratios.
+
+Compiler admission also caps statement/expression nodes at 50,000, syntax
+depth at 64, total tokens at 100,000, and tokens on one logical line at 4,096.
+Limit failures use stable `xian.limit.*` codes.
 
 ## Validation
 
@@ -159,3 +163,4 @@ uv run pytest
 - [docs/README.md](docs/README.md) — index of internal docs
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — major components and dependency direction
 - [docs/BACKLOG.md](docs/BACKLOG.md) — open work and follow-ups
+- [docs/RELEASING.md](docs/RELEASING.md) — fail-closed tag and package release process

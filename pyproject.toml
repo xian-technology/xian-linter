@@ -39,6 +39,7 @@ xian-tech-vm-core = { path = "../xian-contracting/packages/xian-vm-core", editab
 
 [tool.setuptools.packages.find]
 where = ["."]
+exclude = ["scripts*", "tests*"]
 
 [tool.ruff]
 line-length = 100

@@ -13,17 +13,8 @@ from collections.abc import Iterable
 from functools import lru_cache
 from io import StringIO
 
-from contracting.compilation.compiler import ContractingCompiler
-from contracting.compilation.linter import (
-    Linter as ContractingLinter,
-)
-from contracting.compilation.linter import (
-    LintError as ContractingLintError,
-)
-from contracting.compilation.vm import (
-    XIAN_VM_V1_PROFILE,
-    VmCompatibilityChecker,
-)
+from contracting.artifacts import compile_contract_source, diagnose_contract_source
+from contracting.compilation.vm import XIAN_VM_V1_PROFILE
 from pydantic import BaseModel
 from pyflakes.api import check as pyflakes_check
 from pyflakes.reporter import Reporter
@@ -32,7 +23,6 @@ MAX_CODE_SIZE = 1_000_000
 DEFAULT_LINT_MODE = "python"
 XIAN_VM_V1_MODE = XIAN_VM_V1_PROFILE
 SUPPORTED_LINT_MODES = frozenset({DEFAULT_LINT_MODE, XIAN_VM_V1_MODE})
-CONTRACTING_SYNTAX_ERROR_CODE = "E020"
 XIAN_VM_LOWERING_ERROR_CODE = "XVM001"
 XIAN_VM_NATIVE_VALIDATION_ERROR_CODE = "XVM002"
 
@@ -90,16 +80,21 @@ def normalize_lint_mode(mode: str | None = None) -> str:
     return selected
 
 
-def _contracting_to_model(error: ContractingLintError) -> LintErrorModel:
+def _compiler_to_model(diagnostic: dict[str, object]) -> LintErrorModel:
+    raw_range = diagnostic.get("range")
+    position = None
+    if isinstance(raw_range, dict):
+        position = PositionModel(
+            line=int(raw_range["start_line"]),
+            col=int(raw_range["start_column"]),
+            end_line=int(raw_range["end_line"]),
+            end_col=int(raw_range["end_column"]),
+        )
     return LintErrorModel(
-        code=error.code.value,
-        message=error.message,
-        position=PositionModel(
-            line=error.line,
-            col=error.col,
-            end_line=error.end_line,
-            end_col=error.end_col,
-        ),
+        code=str(diagnostic["code"]),
+        message=str(diagnostic["message"]),
+        severity=str(diagnostic.get("severity", "error")),
+        position=position,
     )
 
 
@@ -138,12 +133,14 @@ def _parse_pyflakes(output: str, whitelist: frozenset[str]) -> list[LintErrorMod
     return errors
 
 
-def _run_contracting(code: str) -> list[LintErrorModel]:
-    linter = ContractingLinter()
-    errors = linter.check(code)
-    if not errors:
-        return []
-    return [_contracting_to_model(error) for error in errors]
+def _run_compiler(code: str) -> list[LintErrorModel]:
+    diagnostics = diagnose_contract_source(
+        module_name="__main__",
+        source=code,
+        lint=True,
+        vm_profile=XIAN_VM_V1_MODE,
+    )
+    return [_compiler_to_model(diagnostic) for diagnostic in diagnostics]
 
 
 def _vm_error(code: str, message: str) -> LintErrorModel:
@@ -183,18 +180,17 @@ def _run_native_vm_ir_validation(vm_ir_json: str) -> list[LintErrorModel]:
 
 
 def _run_xian_vm_v1(code: str) -> list[LintErrorModel]:
-    checker = VmCompatibilityChecker()
-    report = checker.check(code, profile=XIAN_VM_V1_MODE)
-    if report.errors:
-        return [_contracting_to_model(error) for error in report.errors]
+    compiler_errors = _run_compiler(code)
+    if compiler_errors:
+        return compiler_errors
 
-    compiler = ContractingCompiler(module_name="__main__")
     try:
-        vm_ir_json = compiler.lower_to_ir_json(
-            code,
-            lint=False,
+        vm_ir_json = compile_contract_source(
+            module_name="__main__",
+            source=code,
+            lint=True,
             vm_profile=XIAN_VM_V1_MODE,
-        )
+        )["vm_ir_json"]
     except Exception as exc:
         return [
             _vm_error(
@@ -209,7 +205,7 @@ def _run_xian_vm_v1(code: str) -> list[LintErrorModel]:
 def _run_contract_rules(code: str, mode: str) -> list[LintErrorModel]:
     if mode == XIAN_VM_V1_MODE:
         return _run_xian_vm_v1(code)
-    return _run_contracting(code)
+    return _run_compiler(code)
 
 
 def _run_pyflakes(code: str, whitelist: frozenset[str]) -> list[LintErrorModel]:
@@ -231,7 +227,10 @@ def _sort_errors(errors: list[LintErrorModel]) -> list[LintErrorModel]:
 
 
 def _has_structured_syntax_error(errors: list[LintErrorModel]) -> bool:
-    return any(error.code == CONTRACTING_SYNTAX_ERROR_CODE for error in errors)
+    return any(
+        error.code.startswith("xian.syntax.") or error.code.startswith("xian.limit.")
+        for error in errors
+    )
 
 
 def _merge_errors(
@@ -252,17 +251,15 @@ async def lint_code(
     whitelist = whitelist or DEFAULT_WHITELIST
     selected_mode = normalize_lint_mode(mode)
     loop = asyncio.get_running_loop()
-    contract_rules_task = loop.run_in_executor(
+    contract_rule_errors = await loop.run_in_executor(
         None,
         _run_contract_rules,
         code,
         selected_mode,
     )
-    pyflakes_task = loop.run_in_executor(None, _run_pyflakes, code, whitelist)
-    contract_rule_errors, pyflakes_errors = await asyncio.gather(
-        contract_rules_task,
-        pyflakes_task,
-    )
+    if _has_structured_syntax_error(contract_rule_errors):
+        return _sort_errors(contract_rule_errors)
+    pyflakes_errors = await loop.run_in_executor(None, _run_pyflakes, code, whitelist)
     return _merge_errors(contract_rule_errors, pyflakes_errors)
 
 

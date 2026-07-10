@@ -1,5 +1,7 @@
 import asyncio
+import json
 import sys
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -13,6 +15,15 @@ from xian_linter import (
     lint_code_sync,
 )
 from xian_linter.linter import lint_code
+
+COMPILER_FIXTURE_DIR = (
+    Path(__file__).resolve().parents[2]
+    / "xian-contracting"
+    / "packages"
+    / "xian-compiler-core"
+    / "tests"
+    / "fixtures"
+)
 
 
 def _valid_vm_source() -> str:
@@ -31,7 +42,7 @@ class Bad:
 """
     )
     assert errors
-    assert any(error.code == "E006" for error in errors)
+    assert any(error.code == "xian.syntax.unsupported_statement.class_def" for error in errors)
     assert any(error.position is not None for error in errors)
 
 
@@ -54,7 +65,7 @@ def change it(test: str):
 """
     )
 
-    assert any(error.code == "E020" for error in errors)
+    assert any(error.code == "xian.syntax.parse_error" for error in errors)
     assert not any(error.code == "W001" for error in errors)
 
 
@@ -68,7 +79,7 @@ def change it(test: str):
         )
     )
 
-    assert any(error.code == "E020" for error in errors)
+    assert any(error.code == "xian.syntax.parse_error" for error in errors)
     assert not any(error.code == "W001" for error in errors)
 
 
@@ -132,7 +143,7 @@ def test_xian_vm_v1_mode_accepts_vm_lowerable_contract():
     assert not errors
 
 
-def test_xian_vm_v1_mode_reports_ir_lowering_errors():
+def test_xian_vm_v1_mode_reports_authoritative_compiler_errors():
     errors = lint_code_inline(
         """
 value = 1
@@ -146,7 +157,7 @@ def f() -> int:
         mode=XIAN_VM_V1_MODE,
     )
 
-    assert any(error.code == "XVM001" for error in errors)
+    assert any(error.code == "xian.syntax.unsupported_statement.global" for error in errors)
 
 
 def test_xian_vm_v1_mode_uses_native_validator_when_available(monkeypatch):
@@ -181,3 +192,80 @@ def test_xian_vm_v1_mode_reports_native_validation_errors(monkeypatch):
 def test_unsupported_lint_mode_is_rejected():
     with pytest.raises(ValueError, match="Unsupported lint mode"):
         lint_code_inline(_valid_vm_source(), mode="unknown")
+
+
+@pytest.mark.parametrize("mode", ["python", XIAN_VM_V1_MODE])
+@pytest.mark.parametrize("fixture_path", sorted(COMPILER_FIXTURE_DIR.glob("*.json")))
+def test_linter_modes_match_shared_compiler_fixtures(
+    mode: str,
+    fixture_path: Path,
+) -> None:
+    fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+    errors = lint_code_sync(fixture["input_source"], mode=mode)
+    compiler_errors = [error for error in errors if error.code.startswith("xian.")]
+
+    expected = []
+    for diagnostic in fixture["diagnostics"]:
+        source_range = diagnostic.get("range")
+        expected.append(
+            {
+                "code": diagnostic["code"],
+                "message": diagnostic["message"],
+                "severity": diagnostic["severity"],
+                "position": (
+                    {
+                        "line": source_range["start_line"],
+                        "col": source_range["start_column"],
+                        "end_line": source_range["end_line"],
+                        "end_col": source_range["end_column"],
+                    }
+                    if source_range is not None
+                    else None
+                ),
+            }
+        )
+
+    assert [error.model_dump() for error in compiler_errors] == expected
+
+
+def _compiler_limits() -> dict[str, int]:
+    import xian_compiler_core
+
+    return xian_compiler_core.compiler_version()["limits"]
+
+
+def _limit_sources() -> list[tuple[str, str]]:
+    limits = _compiler_limits()
+    return [
+        (
+            "xian.limit.source_bytes",
+            "a" * (limits["max_source_bytes"] + 1),
+        ),
+        (
+            "xian.limit.tokens",
+            "a=0\n" * ((limits["max_tokens"] // 4) + 1),
+        ),
+        (
+            "xian.limit.logical_line_tokens",
+            f"value = {'not ' * limits['max_logical_line_tokens']}True\n",
+        ),
+        (
+            "xian.limit.syntax_nodes",
+            "a=0\n" * ((limits["max_syntax_nodes"] // 3) + 1),
+        ),
+        (
+            "xian.limit.syntax_depth",
+            "@export\ndef value():\n    return " + ("not " * limits["max_syntax_depth"]) + "True\n",
+        ),
+    ]
+
+
+@pytest.mark.parametrize("mode", ["python", XIAN_VM_V1_MODE])
+@pytest.mark.parametrize(("expected_code", "source"), _limit_sources())
+def test_linter_modes_enforce_compiler_admission_limits(
+    mode: str,
+    expected_code: str,
+    source: str,
+) -> None:
+    errors = lint_code_sync(source, mode=mode)
+    assert [error.code for error in errors] == [expected_code]

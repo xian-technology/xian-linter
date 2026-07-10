@@ -6,4 +6,4 @@ Start with:
 
 - `ARCHITECTURE.md`
 - `BACKLOG.md`
-
+- `RELEASING.md`
