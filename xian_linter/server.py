@@ -67,6 +67,17 @@ def _server_port() -> int:
     return int(raw_port)
 
 
+async def _read_limited_body(stream: AsyncIterator[bytes], HTTPException) -> bytes:
+    output = bytearray()
+    async for chunk in stream:
+        if len(output) + len(chunk) > MAX_CODE_SIZE:
+            raise HTTPException(status_code=400, detail="Code size too large")
+        output.extend(chunk)
+    if not output:
+        raise HTTPException(status_code=400, detail="Empty request body")
+    return bytes(output)
+
+
 async def _read_limited_gzip_code(
     stream: AsyncIterator[bytes],
     HTTPException,
@@ -128,12 +139,7 @@ def create_app():
 
     @app.post("/lint_base64")
     async def lint_base64(request: Request) -> LintResponse:
-        raw_data = await request.body()
-
-        if not raw_data:
-            raise HTTPException(status_code=400, detail="Empty request body")
-        if len(raw_data) > MAX_CODE_SIZE:
-            raise HTTPException(status_code=400, detail="Code size too large")
+        raw_data = await _read_limited_body(request.stream(), HTTPException)
 
         whitelist = get_whitelist_patterns(request.query_params.get("whitelist_patterns"))
         mode = _request_lint_mode(request, HTTPException)
@@ -185,12 +191,7 @@ def create_app():
 
     @app.post("/lint")
     async def lint_raw(request: Request) -> LintResponse:
-        raw_data = await request.body()
-
-        if not raw_data:
-            raise HTTPException(status_code=400, detail="Empty request body")
-        if len(raw_data) > MAX_CODE_SIZE:
-            raise HTTPException(status_code=400, detail="Code size too large")
+        raw_data = await _read_limited_body(request.stream(), HTTPException)
 
         whitelist = get_whitelist_patterns(request.query_params.get("whitelist_patterns"))
         mode = _request_lint_mode(request, HTTPException)

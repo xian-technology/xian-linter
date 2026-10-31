@@ -193,3 +193,35 @@ def test_run_server_passes_ipv6_loopback_host_to_uvicorn(monkeypatch):
     server.run_server()
 
     assert calls == [{"app": "app", "host": "::1", "port": 8001}]
+
+
+@pytest.mark.parametrize("path", ["/lint", "/lint_base64"])
+def test_plain_endpoints_stop_reading_when_stream_exceeds_limit(path, monkeypatch):
+    monkeypatch.setattr(server, "MAX_CODE_SIZE", 8)
+    app = server.create_app()
+    endpoint = next(route.endpoint for route in app.routes if getattr(route, "path", None) == path)
+    chunks = iter([b"12345678", b"9"])
+
+    async def receive():
+        chunk = next(chunks, None)
+        assert chunk is not None, "must reject before reading the remaining request body"
+        return {"type": "http.request", "body": chunk, "more_body": True}
+
+    request = Request(
+        {"type": "http", "method": "POST", "path": path, "query_string": b"", "headers": []},
+        receive,
+    )
+    with pytest.raises(fastapi.HTTPException) as error:
+        asyncio.run(endpoint(request))
+    assert error.value.status_code == 400
+    assert error.value.detail == "Code size too large"
+
+
+def test_limited_body_accepts_exact_limit_and_empty_chunks(monkeypatch):
+    monkeypatch.setattr(server, "MAX_CODE_SIZE", 8)
+
+    async def chunks():
+        for chunk in (b"1234", b"", b"5678"):
+            yield chunk
+
+    assert asyncio.run(server._read_limited_body(chunks(), fastapi.HTTPException)) == b"12345678"

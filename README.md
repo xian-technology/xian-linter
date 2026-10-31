@@ -140,7 +140,8 @@ xian-linter
   XIAN_LINTER_CORS_ORIGINS=https://ide.example xian-linter
   ```
 
-  Lint transports accept at most 1 MB bodies, while compiler admission accepts
+  Raw and base64 bodies are read with a streaming size bound, independent of
+  Content-Length. Lint transports accept at most 1 MB bodies, while compiler admission accepts
   at most 128 KiB contract source. `/lint_gzip` enforces the transport limit on
   both compressed and decompressed bytes and rejects extreme compression ratios.
 
