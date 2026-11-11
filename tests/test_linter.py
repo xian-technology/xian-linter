@@ -292,6 +292,36 @@ def test_linter_modes_enforce_compiler_admission_limits(
     assert [error.code for error in errors] == [expected_code]
 
 
+@pytest.mark.parametrize(
+    ("source", "expected_code"),
+    [
+        (
+            "@export\ndef f(amount: int) -> int:\n    \uff41mount = 0\n    return amount\n",
+            "xian.syntax.unsupported_identifier.non_ascii",
+        ),
+        (
+            "v = Variable(**{'default_value': 0})\n\n@export\ndef f() -> int:\n    return 1\n",
+            "xian.lint.E023",
+        ),
+        (
+            "@export\ndef f() -> int:\n    v = Variable()\n    return 1\n",
+            "xian.lint.E022",
+        ),
+    ],
+)
+def test_default_mode_matches_v2_source_admission(source: str, expected_code: str) -> None:
+    errors = lint_code_sync(source)
+    assert expected_code in [error.code for error in errors]
+
+
+def test_default_mode_accepts_parenthesized_comprehension_operands() -> None:
+    source = (
+        "@export\ndef f(a: list, b: bool, c: list) -> list:\n"
+        "    return [x for x in (a if b else c)]\n"
+    )
+    assert lint_code_sync(source) == []
+
+
 def test_numeric_profile_validates_decimal_abi_and_helpers():
     source = """@export
 def quote(amount: decimal, n: int):
