@@ -281,10 +281,10 @@ def _limit_sources() -> list[tuple[str, str]]:
     ]
 
 
-@pytest.mark.parametrize("mode", ["python", XIAN_VM_V1_MODE])
+@pytest.mark.parametrize("mode", [None, "python", XIAN_VM_V1_MODE])
 @pytest.mark.parametrize(("expected_code", "source"), _limit_sources())
 def test_linter_modes_enforce_compiler_admission_limits(
-    mode: str,
+    mode: str | None,
     expected_code: str,
     source: str,
 ) -> None:
@@ -297,13 +297,23 @@ def test_numeric_profile_validates_decimal_abi_and_helpers():
 def quote(amount: decimal, n: int):
     return [quantize(amount, 2, 'floor'), sqrt(4), mul_div_floor(n, 2, 3), mul_div_ceil(n, 2, 3)]
 """
+    assert lint_code_inline(source) == []
+    assert lint_code_sync(source) == []
+    assert asyncio.run(lint_code(source)) == []
     assert lint_code_inline(source, mode="xian_vm_v2") == []
     assert asyncio.run(lint_code(source, mode="xian_vm_v2")) == []
     assert any(
         error.code.startswith("xian.") for error in lint_code_sync(source, mode="xian_vm_v1")
     )
     old_source = "@export\ndef legacy(amount: float):\n    return amount"
+    assert any(error.code.startswith("xian.") for error in lint_code_inline(old_source))
+    assert lint_code_inline(old_source, mode="python") == []
     assert lint_code_inline(old_source, mode="xian_vm_v1") == []
     assert any(
         error.code.startswith("xian.") for error in lint_code_sync(old_source, mode="xian_vm_v2")
     )
+
+
+def test_default_reports_unavailable_native_validator(monkeypatch):
+    monkeypatch.setitem(sys.modules, "xian_vm_core", None)
+    assert [error.code for error in lint_code_inline(_valid_vm_source())] == ["XVM002"]

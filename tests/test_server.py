@@ -12,7 +12,7 @@ starlette_requests = pytest.importorskip("starlette.requests")
 Request = starlette_requests.Request
 
 
-async def _call_lint_gzip(body: bytes):
+async def _call_lint_gzip(body: bytes, query: bytes = b""):
     app = server.create_app()
     endpoint = next(
         route.endpoint for route in app.routes if getattr(route, "path", None) == "/lint_gzip"
@@ -31,7 +31,7 @@ async def _call_lint_gzip(body: bytes):
             "type": "http",
             "method": "POST",
             "path": "/lint_gzip",
-            "query_string": b"",
+            "query_string": query,
             "headers": [],
         },
         receive,
@@ -225,3 +225,11 @@ def test_limited_body_accepts_exact_limit_and_empty_chunks(monkeypatch):
             yield chunk
 
     assert asyncio.run(server._read_limited_body(chunks(), fastapi.HTTPException)) == b"12345678"
+
+
+def test_http_default_rejects_float_and_legacy_mode_accepts_it():
+    source = gzip.compress(b"@export\ndef legacy(x: float):\n    return x")
+    current = asyncio.run(_call_lint_gzip(source))
+    legacy = asyncio.run(_call_lint_gzip(source, b"mode=xian_vm_v1"))
+    assert any(error.code.startswith("xian.") for error in current.errors)
+    assert legacy.errors == []

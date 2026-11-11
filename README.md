@@ -17,7 +17,7 @@ flowchart LR
   Source["Contract source"] --> API["Inline API or HTTP server"]
   API --> Pyflakes["PyFlakes checks"]
   API --> Contracting["xian-contracting structured linter"]
-  Contracting --> VM["Optional native IR validation"]
+  Contracting --> VM["Native IR validation"]
   Pyflakes --> Results["Stable diagnostics"]
   Contracting --> Results
   VM --> Results
@@ -26,13 +26,14 @@ flowchart LR
 
 ## Quick Start
 
-Install the base package:
+To run the V2 linter from source, check out `xian-linter` and `xian-contracting`
+as siblings. From the linter checkout, install the base environment:
 
 ```bash
-uv add xian-tech-linter
+uv sync --frozen
 ```
 
-Lint inline (lightweight, position-only diagnostics):
+Lint a fresh-chain contract inline:
 
 ```python
 from xian_linter import lint_code_inline
@@ -50,23 +51,15 @@ errors: list[LintErrorModel] = lint_code_sync(
 )
 ```
 
-Validate against the fresh-genesis numeric profile (`xian_vm_v2`):
-
-```bash
-uv add "xian-tech-linter[vm]"
-```
-
-```python
-from xian_linter import lint_code_sync
-
-errors = lint_code_sync(source, mode="xian_vm_v2")
-```
+The default target is `xian_vm_v2`. Compiler diagnostics, native IR validation,
+and PyFlakes accept exact `decimal` parameters and the V2 rounding helpers.
+To check a historical contract, pass `mode="xian_vm_v1"`.
 
 Run as a standalone HTTP server:
 
 ```bash
-uv add "xian-tech-linter[server]"
-xian-linter
+uv sync --frozen --extra server
+uv run --no-sync xian-linter
 # defaults to http://127.0.0.1:8000
 ```
 
@@ -76,10 +69,9 @@ xian-linter
   execution and contract submission belong elsewhere.
 - **One compiler authority, multiple integration modes.** Inline and server
   modes expose the same Rust compiler rules and `xian.*` diagnostic codes.
-- **Compatible mode names without duplicated semantics.** `python` uses the v1 compiler rules.
-  Both `xian_vm_v1` and `xian_vm_v2` compile for the selected target and
-  use the native IR validator when installed. Select v2 for exact decimal
-  literals, `decimal` parameters and the numeric rounding helpers.
+- **Profile-specific validation.** Both VM modes run the native IR validator
+  installed with the base package. The explicit legacy `python` mode applies
+  V1 compiler checks and PyFlakes and skips native IR validation.
 - **Stable codes and positions.** Tooling (IDE plugins, CI gates, the
   contracting hub) can rely on consistent error codes and source positions
   to render diagnostics.
@@ -107,17 +99,16 @@ xian-linter
   from xian_linter import lint_code_inline, lint_code_sync
   inline_errors = lint_code_inline("def transfer():\n    pass\n")
   sync_errors   = lint_code_sync("def transfer():\n    pass\n")
-  vm_errors     = lint_code_sync(source, mode="xian_vm_v2")
+  legacy_errors = lint_code_sync(source, mode="xian_vm_v1")
   ```
 - **HTTP server** — for editor / IDE integrations, CI runners, or remote
   linting from web frontends:
   ```bash
-  uv add "xian-tech-linter[server]"
-  xian-linter
+  uv sync --frozen --extra server
+  uv run --no-sync xian-linter
   ```
-  Select the VM target with `?mode=xian_vm_v2` on `/lint`, `/lint_base64`, or
-  `/lint_gzip`. Install `xian-tech-linter[server,vm]` when the server should
-  also run native IR validation through `xian_vm_core`.
+  All three lint endpoints (`/lint`, `/lint_base64`, `/lint_gzip`) default
+  to `xian_vm_v2`. Use `?mode=xian_vm_v1` to select the historical target.
 
   HTTP mode is local by default. Use `XIAN_LINTER_HOST` and
   `XIAN_LINTER_PORT` to change the bind address. Set `XIAN_LINTER_HOST=::1`
@@ -157,7 +148,7 @@ failures use stable `xian.limit.*` codes.
 uv sync --group dev
 uv run ruff check .
 uv run ruff format --check .
-uv run pytest
+uv run --extra server pytest
 ```
 
 ## Related Docs

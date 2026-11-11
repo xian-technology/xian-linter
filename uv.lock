@@ -390,6 +390,7 @@ dependencies = [
     { name = "pynacl" },
     { name = "xian-tech-compiler-core" },
     { name = "xian-tech-runtime-types" },
+    { name = "xian-tech-vm-core" },
 ]
 
 [package.metadata]
@@ -400,7 +401,7 @@ requires-dist = [
     { name = "xian-tech-compiler-core", directory = "../xian-contracting/packages/xian-compiler-core" },
     { name = "xian-tech-fastpath-core", marker = "extra == 'native'", editable = "../xian-contracting/packages/xian-fastpath-core" },
     { name = "xian-tech-runtime-types", editable = "../xian-contracting/packages/xian-runtime-types" },
-    { name = "xian-tech-vm-core", marker = "extra == 'v2'", directory = "../xian-contracting/packages/xian-vm-core" },
+    { name = "xian-tech-vm-core", directory = "../xian-contracting/packages/xian-vm-core" },
     { name = "xian-tech-zk", marker = "extra == 'zk'", editable = "../xian-contracting/packages/xian-zk" },
 ]
 provides-extras = ["v2", "native", "zk"]
@@ -421,15 +422,13 @@ dependencies = [
     { name = "pydantic" },
     { name = "pyflakes" },
     { name = "xian-tech-contracting" },
+    { name = "xian-tech-vm-core" },
 ]
 
 [package.optional-dependencies]
 server = [
     { name = "fastapi" },
     { name = "uvicorn" },
-]
-vm = [
-    { name = "xian-tech-vm-core" },
 ]
 
 [package.dev-dependencies]
@@ -445,7 +444,7 @@ requires-dist = [
     { name = "pyflakes", specifier = ">=3.4,<4" },
     { name = "uvicorn", marker = "extra == 'server'", specifier = ">=0.34,<1" },
     { name = "xian-tech-contracting", editable = "../xian-contracting" },
-    { name = "xian-tech-vm-core", marker = "extra == 'vm'", directory = "../xian-contracting/packages/xian-vm-core" },
+    { name = "xian-tech-vm-core", directory = "../xian-contracting/packages/xian-vm-core" },
 ]
 provides-extras = ["server", "vm"]
 

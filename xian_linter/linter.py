@@ -20,10 +20,11 @@ from pyflakes.api import check as pyflakes_check
 from pyflakes.reporter import Reporter
 
 MAX_CODE_SIZE = 1_000_000
-DEFAULT_LINT_MODE = "python"
+LEGACY_PYTHON_MODE = "python"
 XIAN_VM_V1_MODE = XIAN_VM_V1_PROFILE
 XIAN_VM_V2_MODE = XIAN_VM_V2_PROFILE
-SUPPORTED_LINT_MODES = frozenset({DEFAULT_LINT_MODE, XIAN_VM_V1_MODE, XIAN_VM_V2_MODE})
+DEFAULT_LINT_MODE = XIAN_VM_V2_MODE
+SUPPORTED_LINT_MODES = frozenset({LEGACY_PYTHON_MODE, XIAN_VM_V1_MODE, XIAN_VM_V2_MODE})
 XIAN_VM_LOWERING_ERROR_CODE = "XVM001"
 XIAN_VM_NATIVE_VALIDATION_ERROR_CODE = "XVM002"
 
@@ -156,15 +157,6 @@ def _vm_error(code: str, message: str) -> LintErrorModel:
 def _run_native_vm_ir_validation(vm_ir_json: str) -> list[LintErrorModel]:
     try:
         from xian_vm_core import validate_module_ir_json
-    except ModuleNotFoundError as exc:
-        if exc.name == "xian_vm_core":
-            return []
-        return [
-            _vm_error(
-                XIAN_VM_NATIVE_VALIDATION_ERROR_CODE,
-                f"Xian VM native validator could not be loaded: {exc}",
-            )
-        ]
     except ImportError as exc:
         return [
             _vm_error(
@@ -186,9 +178,9 @@ def _run_native_vm_ir_validation(vm_ir_json: str) -> list[LintErrorModel]:
 
 
 def _run_contract_rules(code: str, mode: str) -> list[LintErrorModel]:
-    profile = XIAN_VM_V1_MODE if mode == DEFAULT_LINT_MODE else mode
+    profile = XIAN_VM_V1_MODE if mode == LEGACY_PYTHON_MODE else mode
     compiler_errors = _run_compiler(code, profile)
-    if compiler_errors or mode == DEFAULT_LINT_MODE:
+    if compiler_errors or mode == LEGACY_PYTHON_MODE:
         return compiler_errors
 
     try:
