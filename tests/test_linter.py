@@ -208,8 +208,15 @@ def test_unsupported_lint_mode_is_rejected():
         lint_code_inline(_valid_vm_source(), mode="unknown")
 
 
-@pytest.mark.parametrize("mode", ["python", XIAN_VM_V1_MODE])
-@pytest.mark.parametrize("fixture_path", sorted(COMPILER_FIXTURE_DIR.glob("*.json")))
+def compiler_fixture_modes():
+    for path in sorted(COMPILER_FIXTURE_DIR.glob("*.json")):
+        profile = json.loads(path.read_text(encoding="utf-8"))["vm_profile"]
+        modes = ("python", profile) if profile == XIAN_VM_V1_MODE else (profile,)
+        for mode in modes:
+            yield pytest.param(mode, path, id=f"{mode}-{path.stem}")
+
+
+@pytest.mark.parametrize(("mode", "fixture_path"), list(compiler_fixture_modes()))
 def test_linter_modes_match_shared_compiler_fixtures(
     mode: str,
     fixture_path: Path,
@@ -283,3 +290,20 @@ def test_linter_modes_enforce_compiler_admission_limits(
 ) -> None:
     errors = lint_code_sync(source, mode=mode)
     assert [error.code for error in errors] == [expected_code]
+
+
+def test_numeric_profile_validates_decimal_abi_and_helpers():
+    source = """@export
+def quote(amount: decimal, n: int):
+    return [quantize(amount, 2, 'floor'), sqrt(4), mul_div_floor(n, 2, 3), mul_div_ceil(n, 2, 3)]
+"""
+    assert lint_code_inline(source, mode="xian_vm_v2") == []
+    assert asyncio.run(lint_code(source, mode="xian_vm_v2")) == []
+    assert any(
+        error.code.startswith("xian.") for error in lint_code_sync(source, mode="xian_vm_v1")
+    )
+    old_source = "@export\ndef legacy(amount: float):\n    return amount"
+    assert lint_code_inline(old_source, mode="xian_vm_v1") == []
+    assert any(
+        error.code.startswith("xian.") for error in lint_code_sync(old_source, mode="xian_vm_v2")
+    )

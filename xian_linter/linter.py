@@ -14,7 +14,7 @@ from functools import lru_cache
 from io import StringIO
 
 from contracting.artifacts import compile_contract_source, diagnose_contract_source
-from contracting.compilation.vm import XIAN_VM_V1_PROFILE
+from contracting.compilation.vm import XIAN_VM_V1_PROFILE, XIAN_VM_V2_PROFILE
 from pydantic import BaseModel
 from pyflakes.api import check as pyflakes_check
 from pyflakes.reporter import Reporter
@@ -22,7 +22,8 @@ from pyflakes.reporter import Reporter
 MAX_CODE_SIZE = 1_000_000
 DEFAULT_LINT_MODE = "python"
 XIAN_VM_V1_MODE = XIAN_VM_V1_PROFILE
-SUPPORTED_LINT_MODES = frozenset({DEFAULT_LINT_MODE, XIAN_VM_V1_MODE})
+XIAN_VM_V2_MODE = XIAN_VM_V2_PROFILE
+SUPPORTED_LINT_MODES = frozenset({DEFAULT_LINT_MODE, XIAN_VM_V1_MODE, XIAN_VM_V2_MODE})
 XIAN_VM_LOWERING_ERROR_CODE = "XVM001"
 XIAN_VM_NATIVE_VALIDATION_ERROR_CODE = "XVM002"
 
@@ -51,6 +52,9 @@ DEFAULT_WHITELIST = frozenset(
         "zk",
     }
 )
+
+
+V2_WHITELIST = DEFAULT_WHITELIST | {"sqrt", "quantize", "mul_div_floor", "mul_div_ceil"}
 
 
 class PositionModel(BaseModel):
@@ -135,12 +139,12 @@ def _parse_pyflakes(output: str, whitelist: frozenset[str]) -> list[LintErrorMod
     return errors
 
 
-def _run_compiler(code: str) -> list[LintErrorModel]:
+def _run_compiler(code: str, profile: str) -> list[LintErrorModel]:
     diagnostics = diagnose_contract_source(
         module_name="__main__",
         source=code,
         lint=True,
-        vm_profile=XIAN_VM_V1_MODE,
+        vm_profile=profile,
     )
     return [_compiler_to_model(diagnostic) for diagnostic in diagnostics]
 
@@ -181,9 +185,10 @@ def _run_native_vm_ir_validation(vm_ir_json: str) -> list[LintErrorModel]:
     return []
 
 
-def _run_xian_vm_v1(code: str) -> list[LintErrorModel]:
-    compiler_errors = _run_compiler(code)
-    if compiler_errors:
+def _run_contract_rules(code: str, mode: str) -> list[LintErrorModel]:
+    profile = XIAN_VM_V1_MODE if mode == DEFAULT_LINT_MODE else mode
+    compiler_errors = _run_compiler(code, profile)
+    if compiler_errors or mode == DEFAULT_LINT_MODE:
         return compiler_errors
 
     try:
@@ -191,7 +196,7 @@ def _run_xian_vm_v1(code: str) -> list[LintErrorModel]:
             module_name="__main__",
             source=code,
             lint=True,
-            vm_profile=XIAN_VM_V1_MODE,
+            vm_profile=profile,
         )["vm_ir_json"]
     except Exception as exc:
         return [
@@ -202,12 +207,6 @@ def _run_xian_vm_v1(code: str) -> list[LintErrorModel]:
         ]
 
     return _run_native_vm_ir_validation(vm_ir_json)
-
-
-def _run_contract_rules(code: str, mode: str) -> list[LintErrorModel]:
-    if mode == XIAN_VM_V1_MODE:
-        return _run_xian_vm_v1(code)
-    return _run_compiler(code)
 
 
 def _run_pyflakes(code: str, whitelist: frozenset[str]) -> list[LintErrorModel]:
@@ -250,8 +249,8 @@ async def lint_code(
     *,
     mode: str | None = DEFAULT_LINT_MODE,
 ) -> list[LintErrorModel]:
-    whitelist = whitelist or DEFAULT_WHITELIST
     selected_mode = normalize_lint_mode(mode)
+    whitelist = whitelist or get_whitelist_patterns(mode=selected_mode)
     loop = asyncio.get_running_loop()
     contract_rule_errors = await loop.run_in_executor(
         None,
@@ -271,8 +270,8 @@ def lint_code_sync(
     *,
     mode: str | None = DEFAULT_LINT_MODE,
 ) -> list[LintErrorModel]:
-    whitelist = whitelist or DEFAULT_WHITELIST
     selected_mode = normalize_lint_mode(mode)
+    whitelist = whitelist or get_whitelist_patterns(mode=selected_mode)
     contract_rule_errors = _run_contract_rules(code, selected_mode)
     if _has_structured_syntax_error(contract_rule_errors):
         return _sort_errors(contract_rule_errors)
@@ -288,16 +287,14 @@ def lint_code_inline(
     *,
     mode: str | None = DEFAULT_LINT_MODE,
 ) -> list[LintErrorModel]:
-    whitelist = (
-        frozenset(whitelist_patterns) if whitelist_patterns is not None else DEFAULT_WHITELIST
-    )
+    whitelist = frozenset(whitelist_patterns) if whitelist_patterns is not None else None
     return lint_code_sync(code, whitelist, mode=mode)
 
 
 @lru_cache(maxsize=100)
 def get_whitelist_patterns(
-    patterns_str: str | None = None,
+    patterns_str: str | None = None, *, mode: str = DEFAULT_LINT_MODE
 ) -> frozenset[str]:
     if not patterns_str:
-        return DEFAULT_WHITELIST
+        return V2_WHITELIST if mode == XIAN_VM_V2_MODE else DEFAULT_WHITELIST
     return frozenset(patterns_str.split(","))

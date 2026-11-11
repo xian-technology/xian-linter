@@ -17,7 +17,7 @@ flowchart LR
   Source["Contract source"] --> API["Inline API or HTTP server"]
   API --> Pyflakes["PyFlakes checks"]
   API --> Contracting["xian-contracting structured linter"]
-  Contracting --> VM["Optional xian_vm_v1 validation"]
+  Contracting --> VM["Optional native IR validation"]
   Pyflakes --> Results["Stable diagnostics"]
   Contracting --> Results
   VM --> Results
@@ -50,7 +50,7 @@ errors: list[LintErrorModel] = lint_code_sync(
 )
 ```
 
-Validate against the `xian_vm_v1` target:
+Validate against the fresh-genesis numeric profile (`xian_vm_v2`):
 
 ```bash
 uv add "xian-tech-linter[vm]"
@@ -59,7 +59,7 @@ uv add "xian-tech-linter[vm]"
 ```python
 from xian_linter import lint_code_sync
 
-errors = lint_code_sync(source, mode="xian_vm_v1")
+errors = lint_code_sync(source, mode="xian_vm_v2")
 ```
 
 Run as a standalone HTTP server:
@@ -76,9 +76,10 @@ xian-linter
   execution and contract submission belong elsewhere.
 - **One compiler authority, multiple integration modes.** Inline and server
   modes expose the same Rust compiler rules and `xian.*` diagnostic codes.
-- **Compatible mode names without duplicated semantics.** Both `python` and
-  `xian_vm_v1` use the Rust compiler; the names remain API-compatible. VM mode
-  additionally uses the native `xian_vm_core` IR validator when installed.
+- **Compatible mode names without duplicated semantics.** `python` uses the v1 compiler rules.
+  Both `xian_vm_v1` and `xian_vm_v2` compile for the selected target and
+  use the native IR validator when installed. Select v2 for exact decimal
+  literals, `decimal` parameters and the numeric rounding helpers.
 - **Stable codes and positions.** Tooling (IDE plugins, CI gates, the
   contracting hub) can rely on consistent error codes and source positions
   to render diagnostics.
@@ -106,7 +107,7 @@ xian-linter
   from xian_linter import lint_code_inline, lint_code_sync
   inline_errors = lint_code_inline("def transfer():\n    pass\n")
   sync_errors   = lint_code_sync("def transfer():\n    pass\n")
-  vm_errors     = lint_code_sync(source, mode="xian_vm_v1")
+  vm_errors     = lint_code_sync(source, mode="xian_vm_v2")
   ```
 - **HTTP server** — for editor / IDE integrations, CI runners, or remote
   linting from web frontends:
@@ -114,7 +115,7 @@ xian-linter
   uv add "xian-tech-linter[server]"
   xian-linter
   ```
-  Select the VM target with `?mode=xian_vm_v1` on `/lint`, `/lint_base64`, or
+  Select the VM target with `?mode=xian_vm_v2` on `/lint`, `/lint_base64`, or
   `/lint_gzip`. Install `xian-tech-linter[server,vm]` when the server should
   also run native IR validation through `xian_vm_core`.
 

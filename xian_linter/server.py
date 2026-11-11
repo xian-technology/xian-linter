@@ -141,8 +141,10 @@ def create_app():
     async def lint_base64(request: Request) -> LintResponse:
         raw_data = await _read_limited_body(request.stream(), HTTPException)
 
-        whitelist = get_whitelist_patterns(request.query_params.get("whitelist_patterns"))
         mode = _request_lint_mode(request, HTTPException)
+        whitelist = get_whitelist_patterns(
+            request.query_params.get("whitelist_patterns"), mode=mode
+        )
 
         try:
             code = base64.b64decode(raw_data.decode("utf-8", errors="replace")).decode(
@@ -167,8 +169,10 @@ def create_app():
 
     @app.post("/lint_gzip")
     async def lint_gzip(request: Request) -> LintResponse:
-        whitelist = get_whitelist_patterns(request.query_params.get("whitelist_patterns"))
         mode = _request_lint_mode(request, HTTPException)
+        whitelist = get_whitelist_patterns(
+            request.query_params.get("whitelist_patterns"), mode=mode
+        )
 
         try:
             code = await _read_limited_gzip_code(request.stream(), HTTPException)
@@ -193,8 +197,10 @@ def create_app():
     async def lint_raw(request: Request) -> LintResponse:
         raw_data = await _read_limited_body(request.stream(), HTTPException)
 
-        whitelist = get_whitelist_patterns(request.query_params.get("whitelist_patterns"))
         mode = _request_lint_mode(request, HTTPException)
+        whitelist = get_whitelist_patterns(
+            request.query_params.get("whitelist_patterns"), mode=mode
+        )
 
         try:
             code = raw_data.decode("utf-8", errors="replace")
