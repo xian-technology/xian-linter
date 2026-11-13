@@ -307,6 +307,11 @@ def test_linter_modes_enforce_compiler_admission_limits(
             "@export\ndef f() -> int:\n    v = Variable()\n    return 1\n",
             "xian.lint.E022",
         ),
+        (
+            # Admission revision 3: a key that could not fit LMDB's 511 bytes.
+            f"{'h' * 446} = Hash()\n\n@export\ndef f() -> int:\n    return 1\n",
+            "xian.lint.E024",
+        ),
     ],
 )
 def test_default_mode_matches_v2_source_admission(source: str, expected_code: str) -> None:
