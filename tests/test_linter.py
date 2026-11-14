@@ -349,6 +349,17 @@ def quote(amount: decimal, n: int):
     )
 
 
+def test_v2_admits_round_and_reports_float():
+    rounded = "@export\ndef f(amount: decimal) -> list:\n    return [round(amount), round(amount, 2), round(125, -1)]\n"
+    assert lint_code_sync(rounded) == []
+    assert lint_code_inline(rounded, mode="xian_vm_v2") == []
+    floated = "@export\ndef f(amount: decimal):\n    return float(amount)\n"
+    errors = lint_code_inline(floated, mode="xian_vm_v2")
+    assert [(error.code, error.message) for error in errors if "E014" in error.code] == [
+        ("xian.lint.E014", "'float' is unavailable in xian_vm_v2")
+    ]
+
+
 def test_default_reports_unavailable_native_validator(monkeypatch):
     monkeypatch.setitem(sys.modules, "xian_vm_core", None)
     assert [error.code for error in lint_code_inline(_valid_vm_source())] == ["XVM002"]
