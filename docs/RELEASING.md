@@ -16,8 +16,9 @@ Prereleases may use `alpha.N`, `beta.N`, or `rc.N` suffixes.
 
 1. Update `pyproject.toml` to the intended version.
 2. Refresh and commit `uv.lock`.
-3. Pin the coherent released `xian-contracting` source and all local-path
-   package versions in `release-manifest.json`.
+3. Pin the coherent released `xian-contracting` source and the versions of
+   its packages this repo locks (`xian-tech-compiler-core`,
+   `xian-tech-runtime-types`, `xian-tech-vm-core`) in `release-manifest.json`.
 4. Run `uv run python scripts/release_context.py validate-manifest`.
 5. Run the validation commands from `AGENTS.md` with `uv sync --frozen`.
 6. Commit the version, lockfile, and release manifest from a clean tree.

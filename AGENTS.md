@@ -2,7 +2,7 @@
 
 ## Scope
 - `xian-linter` is the standalone linting wrapper around the Xian contract rules.
-- Keep the authoritative contract-rule semantics in `xian-contracting`; this repo should wrap and expose them cleanly.
+- Keep the authoritative contract-rule semantics in the Rust compiler core (`xian-contracting/packages/xian-compiler-core`, package `xian-tech-compiler-core`); this repo should wrap and expose them cleanly.
 - Avoid duplicating runtime semantics here.
 
 ## Shared Convention
@@ -17,7 +17,7 @@
 - `docs/`: internal architecture and backlog notes
 
 ## Workflow
-- Favor consuming shared logic from `xian-contracting` instead of copying it.
+- Favor consuming shared logic from `xian_compiler_core` and `xian_vm_core` instead of copying it; do not add a dependency on `xian-tech-contracting`.
 - Keep the package small and focused on linting UX and integration surfaces.
 
 ## Validation

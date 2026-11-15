@@ -1,9 +1,12 @@
 # xian-linter
 
 `xian-linter` is a Python linter specifically for Xian smart contracts. It
-combines PyFlakes with authoritative Rust compiler diagnostics exposed by
-[`xian-contracting`](../xian-contracting), so rule violations match Python,
-WASM/JavaScript, and validator deployment admission.
+combines PyFlakes with authoritative diagnostics from the Rust compiler core
+(`xian-tech-compiler-core`, built from
+[`xian-contracting`](../xian-contracting)'s `packages/xian-compiler-core`), so
+rule violations match Python, WASM/JavaScript, and validator deployment
+admission. It does not depend on the contract runtime package
+`xian-tech-contracting`.
 
 The published PyPI package is `xian-tech-linter`. The import package and
 console command remain `xian_linter` and `xian-linter`. The package can be
@@ -16,10 +19,10 @@ used inline (as a dependency in another tool) or as an HTTP server when the
 flowchart LR
   Source["Contract source"] --> API["Inline API or HTTP server"]
   API --> Pyflakes["PyFlakes checks"]
-  API --> Contracting["xian-contracting structured linter"]
-  Contracting --> VM["Native IR validation"]
+  API --> Compiler["xian_compiler_core diagnostics and IR"]
+  Compiler --> VM["xian_vm_core IR validation"]
   Pyflakes --> Results["Stable diagnostics"]
-  Contracting --> Results
+  Compiler --> Results
   VM --> Results
   Results --> Tools["IDE, hub, CI, and scripts"]
 ```
@@ -27,7 +30,7 @@ flowchart LR
 ## Quick Start
 
 To run the V2 linter from source, check out `xian-linter` and `xian-contracting`
-as siblings. From the linter checkout, install the base environment:
+as siblings (the compiler and VM packages build from its `packages/`). From the linter checkout, install the base environment:
 
 ```bash
 uv sync --frozen
@@ -84,8 +87,8 @@ uv run --no-sync xian-linter
 ## Key Directories
 
 - `xian_linter/` — package code:
-  - `linter.py` — core lint engine combining PyFlakes and the structured
-    `xian-contracting` linter.
+  - `linter.py` — core lint engine combining PyFlakes, `xian_compiler_core`
+    diagnostics and `xian_vm_core` IR validation.
   - `server.py` — optional FastAPI / ASGI server (`server` extra).
   - `__main__.py` — `xian-linter` console entrypoint.
 - `tests/` — inline and server-mode coverage.
