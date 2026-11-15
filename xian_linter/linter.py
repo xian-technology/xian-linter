@@ -1,8 +1,9 @@
 """Xian smart-contract linter.
 
-This package stays thin on purpose: the authoritative contract-rule surface
-comes from ``xian-contracting`` and is merged with PyFlakes warnings into a
-single structured result list.
+This package stays thin on purpose: the authoritative contract rules come from
+the Rust compiler core (``xian-tech-compiler-core``), the compiled IR is checked
+by the VM's own validator (``xian-tech-vm-core``), and both are merged with
+PyFlakes warnings into a single structured result list.
 """
 
 from __future__ import annotations
@@ -13,11 +14,15 @@ from collections.abc import Iterable
 from functools import lru_cache
 from io import StringIO
 
-from contracting.artifacts import compile_contract_source, diagnose_contract_source
-from contracting.compilation.vm import XIAN_VM_V1_PROFILE, XIAN_VM_V2_PROFILE
 from pydantic import BaseModel
 from pyflakes.api import check as pyflakes_check
 from pyflakes.reporter import Reporter
+from xian_compiler_core import (
+    XIAN_VM_V1_PROFILE,
+    XIAN_VM_V2_PROFILE,
+    compile_contract_source,
+    diagnose_contract,
+)
 
 MAX_CODE_SIZE = 1_000_000
 LEGACY_PYTHON_MODE = "python"
@@ -141,9 +146,9 @@ def _parse_pyflakes(output: str, whitelist: frozenset[str]) -> list[LintErrorMod
 
 
 def _run_compiler(code: str, profile: str) -> list[LintErrorModel]:
-    diagnostics = diagnose_contract_source(
-        module_name="__main__",
-        source=code,
+    diagnostics = diagnose_contract(
+        "__main__",
+        code,
         lint=True,
         vm_profile=profile,
     )
@@ -185,8 +190,8 @@ def _run_contract_rules(code: str, mode: str) -> list[LintErrorModel]:
 
     try:
         vm_ir_json = compile_contract_source(
-            module_name="__main__",
-            source=code,
+            "__main__",
+            code,
             lint=True,
             vm_profile=profile,
         )["vm_ir_json"]

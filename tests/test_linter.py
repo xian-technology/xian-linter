@@ -1,5 +1,6 @@
 import asyncio
 import json
+import subprocess
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -363,3 +364,16 @@ def test_v2_admits_round_and_reports_float():
 def test_default_reports_unavailable_native_validator(monkeypatch):
     monkeypatch.setitem(sys.modules, "xian_vm_core", None)
     assert [error.code for error in lint_code_inline(_valid_vm_source())] == ["XVM002"]
+
+
+def test_linter_runs_on_the_compiler_packages_alone():
+    # The linter needs xian-tech-compiler-core and xian-tech-vm-core, not xian-tech-contracting.
+    script = (
+        "import sys\n"
+        "sys.modules['contracting'] = None\n"
+        "from xian_linter import lint_code_sync\n"
+        f"assert lint_code_sync({_valid_vm_source()!r}) == []\n"
+        "assert [e.code for e in lint_code_sync('class Bad:\\n    pass\\n')] == "
+        "['xian.syntax.unsupported_statement.class_def']\n"
+    )
+    subprocess.run([sys.executable, "-c", script], check=True)
