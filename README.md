@@ -141,9 +141,11 @@ uv run --no-sync xian-linter
   both compressed and decompressed bytes and rejects extreme compression ratios.
 
 Compiler admission also caps statement/expression nodes at 50,000, syntax
-depth at 64, total tokens at 100,000, tokens on one logical line at 4,096,
-canonical IR JSON at 1 MiB, and contract-handle inference at 512 passes. Limit
-failures use stable `xian.limit.*` codes.
+depth at 64, total tokens at 100,000, tokens on one logical line at 4,096 (an
+f-string counts one token per character of its content), canonical IR JSON at
+1 MiB, contract-handle inference at 512 passes, and the work of its
+whole-program analyses at 1,000,000 units. Limit failures use stable
+`xian.limit.*` codes.
 
 ## Validation
 
