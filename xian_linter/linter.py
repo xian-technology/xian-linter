@@ -146,12 +146,7 @@ def _parse_pyflakes(output: str, whitelist: frozenset[str]) -> list[LintErrorMod
 
 
 def _run_compiler(code: str, profile: str) -> list[LintErrorModel]:
-    diagnostics = diagnose_contract(
-        "__main__",
-        code,
-        lint=True,
-        vm_profile=profile,
-    )
+    diagnostics = diagnose_contract("__main__", code, vm_profile=profile)
     return [_compiler_to_model(diagnostic) for diagnostic in diagnostics]
 
 
@@ -189,12 +184,7 @@ def _run_contract_rules(code: str, mode: str) -> list[LintErrorModel]:
         return compiler_errors
 
     try:
-        vm_ir_json = compile_contract_source(
-            "__main__",
-            code,
-            lint=True,
-            vm_profile=profile,
-        )["vm_ir_json"]
+        vm_ir_json = compile_contract_source("__main__", code, vm_profile=profile)["vm_ir_json"]
     except Exception as exc:
         return [
             _vm_error(
